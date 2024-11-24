@@ -6,6 +6,13 @@ import os
 from gensim.models import KeyedVectors
 import gzip
 
+from flask_cors import CORS, cross_origin
+
+app = Flask(__name__)
+cors = CORS(app)  
+
+app.config['CORS_HEADERS'] = 'Content-Type'
+
 url = 'https://drive.google.com/uc?id=0B7XkCwpI5KDYNlNUTTlSS21pQmM'
 output = 'GoogleNews-vectors-negative300.bin.gz'
 model_file = 'GoogleNews-vectors-negative300.bin'
@@ -85,9 +92,20 @@ def validate_data(data):
 
     return errors
 
-@app.route('/select-word', methods=['POST'])
+@app.route('/select-word', methods=['GET', 'POST'])
+@cross_origin()
 def select_word():
-    data = request.json
+    if request.method == 'POST':
+        data = request.json  # JSON-Daten aus dem POST-Request
+    elif request.method == 'GET':
+        # Daten aus den Query-Parametern extrahieren
+        data = {
+            "word1": request.args.get("word1"),
+            "sign1": int(request.args.get("sign1", 0)),
+            "word2": request.args.get("word2"),
+            "sign2": int(request.args.get("sign2", 0)),
+            "word3": request.args.get("word3"),
+        }
 
     print(data)
     errors = validate_data(data)
@@ -103,6 +121,10 @@ def select_word():
         return jsonify({'predicted_word': predicted_word}), 200
     else:
         return jsonify({'error': 'Invalid Data'}), 400
+
+@app.route('/status', methods=['GET'])
+def get_status():
+    return jsonify({"status": "OK"}), 200
 
 if __name__ == '__main__':
     print("Server Running")
